@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, AlertTriangle, Send, User, ArrowLeft, ArrowRight, Clock, Camera, MapPin } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Send, User, MapPin, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const HYDRANTS = [
   { id: 1, address: "Rua Antônio Joaquim Tavares, 942", mapsLink: "https://maps.app.goo.gl/placeholder1" },
@@ -14,7 +14,7 @@ const HYDRANTS = [
 export default function App() {
   const [step, setStep] = useState('home');
   const [firefighter, setFirefighter] = useState({ name: "" });
-  const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '', photo: null })));
+  const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OPERANTE', obs: '' })));
   const [currentIdx, setCurrentIdx] = useState(0);
 
   const updateStatus = (status, obs) => {
@@ -25,13 +25,13 @@ export default function App() {
   };
 
   const sendEmail = () => {
-    // Verificamos se o emailjs carregou no navegador (window.emailjs)
+    // Verificamos se o emailjs está disponível no navegador
     if (!window.emailjs) {
-      alert("Erro: O serviço de e-mail não foi carregado corretamente.");
+      alert("Erro: O serviço de e-mail não foi carregado. Verifique sua conexão ou o index.html.");
       return;
     }
 
-    const issues = checklist.filter(h => h.status !== 'OK');
+    const issues = checklist.filter(h => h.status !== 'OPERANTE');
     const templateParams = {
       to_email: "7221cmt@cbm.sc.gov.br",
       firefighter_name: firefighter.name,
@@ -43,7 +43,6 @@ export default function App() {
 
     window.emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams, 'L_pUEcfq0dD7rcw5p')
       .then(() => {
-        localStorage.setItem('lastInspector', JSON.stringify({ name: firefighter.name, date: new Date().toLocaleString() }));
         alert("Muito obrigado! Relatório enviado com sucesso.");
         setStep('home');
       })
@@ -56,40 +55,41 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 p-4">
       {step === 'home' && (
-        <div className="max-w-md mx-auto space-y-6">
+        <div className="max-w-md mx-auto space-y-6 pt-10">
           <div className="flex items-center justify-center gap-4">
             <div className="text-red-500">
                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
             </div>
             <h1 className="text-2xl font-bold text-center">Vistoria Hidrantes Penha</h1>
           </div>
-          <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" placeholder="Nome do Bombeiro" onChange={(e) => setFirefighter({name: e.target.value})} />
-          <button onClick={() => firefighter.name && setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
+          <input className="w-full p-4 bg-slate-800 rounded border border-slate-700 text-white" placeholder="Nome do Bombeiro" onChange={(e) => setFirefighter({name: e.target.value})} />
+          <button onClick={() => firefighter.name && setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold hover:bg-red-700">Iniciar Vistoria</button>
         </div>
       )}
 
       {step === 'checklist' && (
         <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-lg text-white">
-          <h2 className="text-xl font-bold mb-2">Hidrante {currentIdx + 1}/7</h2>
-          <p className="text-slate-100 font-semibold">{checklist[currentIdx].address}</p>
-          <a href={checklist[currentIdx].mapsLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-400 text-sm mb-4 underline">
+          <h2 className="text-lg font-bold mb-1">Hidrante {currentIdx + 1}/7</h2>
+          <p className="text-slate-300 mb-4">{checklist[currentIdx].address}</p>
+          
+          <a href={checklist[currentIdx].mapsLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-400 text-sm mb-6 underline">
             <MapPin size={16} /> Abrir no Google Maps
           </a>
           
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <button onClick={() => updateStatus('OPERANTE', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status === 'OPERANTE' ? 'bg-green-600' : 'bg-slate-700'}`}>OPERANTE</button>
-            <button onClick={() => updateStatus('PROBLEMA', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status === 'PROBLEMA' ? 'bg-red-600' : 'bg-slate-700'}`}>PROBLEMA</button>
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <button onClick={() => updateStatus('OPERANTE', '')} className={`p-4 rounded font-bold ${checklist[currentIdx].status === 'OPERANTE' ? 'bg-green-600' : 'bg-slate-700'}`}>OPERANTE</button>
+            <button onClick={() => updateStatus('PROBLEMA', checklist[currentIdx].obs)} className={`p-4 rounded font-bold ${checklist[currentIdx].status === 'PROBLEMA' ? 'bg-red-600' : 'bg-slate-700'}`}>PROBLEMA</button>
           </div>
 
           {checklist[currentIdx].status === 'PROBLEMA' && (
-            <textarea className="w-full p-3 bg-slate-900 rounded mb-4 border border-red-500" placeholder="Descreva o problema..." onChange={(e) => updateStatus('PROBLEMA', e.target.value)} />
+            <textarea className="w-full p-3 bg-slate-900 rounded mb-4 border border-red-500 text-white" placeholder="Descreva o problema..." onChange={(e) => updateStatus('PROBLEMA', e.target.value)} value={checklist[currentIdx].obs} />
           )}
 
           <div className="flex justify-between mt-6">
-            <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="px-4 py-2 bg-slate-700 rounded">Voltar</button>
+            <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="flex items-center gap-2 px-4 py-2 bg-slate-700 rounded"><ArrowLeft size={16}/> Voltar</button>
             {currentIdx < 6 ? 
-              <button onClick={() => setCurrentIdx(currentIdx + 1)} className="px-4 py-2 bg-slate-700 rounded">Próximo</button> :
-              <button onClick={sendEmail} className="px-4 py-2 bg-blue-600 rounded font-bold">Enviar Relatório</button>
+              <button onClick={() => setCurrentIdx(currentIdx + 1)} className="flex items-center gap-2 px-4 py-2 bg-slate-700 rounded">Próximo <ArrowRight size={16}/></button> :
+              <button onClick={sendEmail} className="flex items-center gap-2 px-6 py-2 bg-blue-600 rounded font-bold text-white"><Send size={16}/> Enviar</button>
             }
           </div>
         </div>
