@@ -4,127 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checklist Hidrantes CBMSC</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & Babel -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body class="bg-slate-900 text-slate-100">
-    <div id="root"></div>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <div id="app" class="max-w-md mx-auto p-4"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <script>
+        emailjs.init("L_pUEcfq0dD7rcw5p");
 
         const HYDRANTS = [
-            { id: 1, address: "Rua Antônio Joaquim Tavares, 942", neighborhood: "Centro" },
-            { id: 2, address: "Rua Inácio Francisco de Souza", neighborhood: "Armação" },
-            { id: 3, address: "Rua José Domiciliano Pereira", neighborhood: "Armação" },
-            { id: 4, address: "Av. Nereu Ramos, 889", neighborhood: "Centro" },
-            { id: 5, address: "Av. Nereu Ramos (Posto Delta)", neighborhood: "Centro" },
-            { id: 6, address: "Rua Marciano Luiz Bento", neighborhood: "Gravatá" },
-            { id: 7, address: "Rua Inacio Jacinto Albano, 2233", neighborhood: "Armação" }
+            "Rua Antônio Joaquim Tavares, 942, Centro",
+            "Rua Inácio Francisco de Souza, Armação",
+            "Rua José Domiciliano Pereira, Armação",
+            "Av. Nereu Ramos, 889, Centro",
+            "Av. Nereu Ramos, Posto Delta",
+            "Rua Marciano Luiz Bento, Gravatá",
+            "Rua Inacio Jacinto Albano, 2233, Armação"
         ];
 
-        function App() {
-            const [step, setStep] = useState('home');
-            const [firefighter, setFirefighter] = useState({ name: "" });
-            const [lastInspector, setLastInspector] = useState(null);
-            const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '', photo: null })));
-            const [currentIdx, setCurrentIdx] = useState(0);
+        let state = {
+            step: 'home',
+            inspectorName: localStorage.getItem('lastInspectorName') || '',
+            results: HYDRANTS.map(() => ({ status: 'OK', obs: '', photo: null })),
+            currentIdx: 0
+        };
 
-            useEffect(() => {
-                const saved = localStorage.getItem('lastInspector');
-                if (saved) setLastInspector(JSON.parse(saved));
-                emailjs.init("L_pUEcfq0dD7rcw5p");
-            }, []);
-
-            const updateStatus = (status, obs, photo = null) => {
-                const next = [...checklist];
-                next[currentIdx].status = status;
-                next[currentIdx].obs = obs;
-                if (photo) next[currentIdx].photo = photo;
-                setChecklist(next);
-            };
-
-            const handleFileChange = (e) => {
-                if (e.target.files && e.target.files[0]) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        updateStatus(checklist[currentIdx].status, checklist[currentIdx].obs, reader.result);
-                    };
-                    reader.readAsDataURL(e.target.files[0]);
-                }
-            };
-
-            const sendEmail = () => {
-                const issues = checklist.filter(h => h.status !== 'OK');
-                const templateParams = {
-                    firefighter_name: firefighter.name,
-                    date: new Date().toLocaleDateString('pt-BR'),
-                    details: issues.length > 0 ? issues.map(i => `${i.address} (${i.status}): ${i.obs} ${i.photo ? '[Foto]' : ''}`).join(" | ") : "Tudo Operante.",
-                    status: issues.length > 0 ? "Com Problemas" : "Sem Alterações"
-                };
-
-                emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams)
-                    .then(() => {
-                        const record = { name: firefighter.name, date: new Date().toLocaleString() };
-                        localStorage.setItem('lastInspector', JSON.stringify(record));
-                        setLastInspector(record);
-                        alert("Relatório enviado com sucesso!");
-                        setStep('home');
-                    })
-                    .catch(() => alert("Erro ao enviar."));
-            };
-
-            return (
-                <div className="min-h-screen p-4">
-                    {step === 'home' && (
-                        <div className="max-w-md mx-auto space-y-6 mt-10">
-                            <h1 className="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes</h1>
-                            {lastInspector && (
-                                <div className="bg-slate-800 p-4 rounded-lg border-l-4 border-blue-500 text-sm">
-                                    <p className="font-bold">Última Vistoria:</p>
-                                    <p>{lastInspector.name} em {lastInspector.date}</p>
-                                </div>
-                            )}
-                            <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" placeholder="Nome do Bombeiro" onChange={(e) => setFirefighter({name: e.target.value})} />
-                            <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
-                        </div>
-                    )}
-
-                    {step === 'checklist' && (
-                        <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-lg">
-                            <h2 className="text-xl font-bold mb-4">Hidrante {currentIdx + 1}/7</h2>
-                            <p className="text-slate-300 mb-4">{checklist[currentIdx].address}</p>
-                            <div className="flex gap-2 mb-4">
-                                <button onClick={() => updateStatus('OK', checklist[currentIdx].obs)} className={`flex-1 p-3 rounded ${checklist[currentIdx].status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}`}>OK</button>
-                                <button onClick={() => updateStatus('Problema', checklist[currentIdx].obs)} className={`flex-1 p-3 rounded ${checklist[currentIdx].status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}`}>Problema</button>
-                            </div>
-                            {checklist[currentIdx].status !== 'OK' && (
-                                <textarea className="w-full p-3 bg-slate-900 rounded mb-4" placeholder="Justifique..." onChange={(e) => updateStatus('Problema', e.target.value)} />
-                            )}
-                            <label className="block bg-slate-900 p-3 rounded mb-4 text-center cursor-pointer">
-                                {checklist[currentIdx].photo ? 'Foto Capturada' : 'Tirar Foto'}
-                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
-                            </label>
-                            <div className="flex justify-between">
-                                <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="px-4 py-2 bg-slate-700 rounded">Voltar</button>
-                                {currentIdx < 6 ? <button onClick={() => setCurrentIdx(currentIdx + 1)} className="px-4 py-2 bg-slate-700 rounded">Próximo</button> : <button onClick={sendEmail} className="px-4 py-2 bg-blue-600 rounded">Finalizar</button>}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
+        function render() {
+            const app = document.getElementById('app');
+            if (state.step === 'home') {
+                app.innerHTML = `
+                    <h1 class="text-2xl font-bold text-red-500 text-center mb-6">Vistoria de Hidrantes</h1>
+                    <div class="bg-slate-800 p-4 rounded-lg mb-6">
+                        <p class="text-sm">Último inspetor: ${localStorage.getItem('lastInspectorName') || 'Nenhum'}</p>
+                    </div>
+                    <input id="name" type="text" value="${state.inspectorName}" placeholder="Nome do Bombeiro" class="w-full p-3 bg-slate-800 rounded mb-4 text-white border border-slate-700" onchange="state.inspectorName = this.value">
+                    <button onclick="state.step='checklist'; render()" class="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
+                `;
+            } else {
+                const item = HYDRANTS[state.currentIdx];
+                const res = state.results[state.currentIdx];
+                app.innerHTML = `
+                    <h2 class="text-xl font-bold mb-4">Hidrante ${state.currentIdx + 1}/7</h2>
+                    <p class="mb-4">${item}</p>
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="updateStatus('OK')" class="flex-1 p-3 rounded ${res.status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}">OK</button>
+                        <button onclick="updateStatus('Problema')" class="flex-1 p-3 rounded ${res.status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}">Problema</button>
+                    </div>
+                    ${res.status !== 'OK' ? `<textarea onchange="state.results[state.currentIdx].obs = this.value" class="w-full p-3 bg-slate-800 rounded mb-4" placeholder="Justificativa...">${res.obs}</textarea>` : ''}
+                    <div class="flex justify-between mt-4">
+                        <button onclick="state.currentIdx = Math.max(0, state.currentIdx - 1); render()" class="bg-slate-700 px-4 py-2 rounded">Voltar</button>
+                        ${state.currentIdx < 6 ? 
+                            `<button onclick="state.currentIdx++; render()" class="bg-slate-700 px-4 py-2 rounded">Próximo</button>` : 
+                            `<button onclick="sendReport()" class="bg-blue-600 px-4 py-2 rounded">Enviar Relatório</button>`}
+                    </div>
+                `;
+            }
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        function updateStatus(status) {
+            state.results[state.currentIdx].status = status;
+            render();
+        }
+
+        function sendReport() {
+            localStorage.setItem('lastInspectorName', state.inspectorName);
+            const templateParams = {
+                firefighter_name: state.inspectorName,
+                date: new Date().toLocaleDateString(),
+                details: state.results.map((r, i) => `${HYDRANTS[i]}: ${r.status} ${r.obs}`).join(" | "),
+                status: "Finalizado"
+            };
+            emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams)
+                .then(() => { alert("Enviado!"); location.reload(); })
+                .catch(() => alert("Erro ao enviar."));
+        }
+
+        render();
     </script>
 </body>
 </html>
