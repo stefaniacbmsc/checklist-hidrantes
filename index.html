@@ -4,105 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checklist Hidrantes CBMSC</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel para compilar JSX -->
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </head>
-<body class="bg-slate-900 text-slate-100">
-    <div id="root"></div>
+<body class="bg-slate-950 text-slate-100">
+
+    <!-- Container onde o React vai aparecer -->
+    <div id="root">
+        <div class="flex h-screen items-center justify-center">
+            <p>Carregando sistema...</p>
+        </div>
+    </div>
 
     <script type="text/babel">
-        const { useState } = React;
-        const HYDRANTS = [
-            { id: 1, address: "Rua Antônio Joaquim Tavares, 942", neighborhood: "Centro" },
-            { id: 2, address: "Rua Inácio Francisco de Souza", neighborhood: "Armação (Beto Carrero)" },
-            { id: 3, address: "Rua José Domiciliano Pereira", neighborhood: "Armação" },
-            { id: 4, address: "Av. Nereu Ramos, 889", neighborhood: "Centro (Prefeitura)" },
-            { id: 5, address: "Av. Nereu Ramos", neighborhood: "Centro/Armação (Posto Delta)" },
-            { id: 6, address: "Rua Marciano Luiz Bento", neighborhood: "Gravatá (Asilo)" },
-            { id: 7, address: "Rua Inacio Jacinto Albano, 2233", neighborhood: "Armação (Villa Park)" }
-        ];
+        // Tente carregar o App apenas após o DOM carregar
+        try {
+            const { useState } = React;
+            
+            const HYDRANTS = [
+                { id: 1, address: "Rua Antônio Joaquim Tavares, 942, Centro (Próx. ao Ginásio)" },
+                { id: 2, address: "Rua Inácio Francisco de Souza (Próx. Pousada Suite 8 - Beto Carrero)" },
+                { id: 3, address: "Rua José Domiciliano Pereira (Av. Itapocoroi - Abastecimento usual)" },
+                { id: 4, address: "Av. Nereu Ramos, 889 (Ao lado da Prefeitura)" },
+                { id: 5, address: "Av. Nereu Ramos (Em frente ao Posto Delta)" },
+                { id: 6, address: "Rua Marciano Luiz Bento, Gravatá (Asilo)" },
+                { id: 7, address: "Rua Inacio Jacinto Albano, 2233, Armação (Em frente Villa Park Chalés)" }
+            ];
 
-        function App() {
-            const [step, setStep] = useState('home');
-            const [firefighter, setFirefighter] = useState({ name: "", rank: "SD BM" });
-            const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '' })));
-            const [currentIdx, setCurrentIdx] = useState(0);
-            const [sending, setSending] = useState(false);
+            function App() {
+                const [step, setStep] = useState('home');
+                const [data, setData] = useState({ name: "", rank: "SD BM" });
+                const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OPERANTE', obs: '' })));
+                const [currentIdx, setCurrentIdx] = useState(0);
 
-            const updateStatus = (status, obs) => {
-                const next = [...checklist];
-                next[currentIdx].status = status;
-                next[currentIdx].obs = obs;
-                setChecklist(next);
-            };
-
-            const sendEmail = () => {
-                setSending(true);
-                const issues = checklist.filter(h => h.status !== 'OK');
-                const templateParams = {
-                    firefighter_name: `${firefighter.rank} ${firefighter.name}`,
-                    details: issues.length > 0 ? issues.map(i => `${i.address}: ${i.obs}`).join(" | ") : "Nenhuma alteração encontrada.",
-                    status: issues.length > 0 ? "Com Alterações" : "Sem Alterações"
+                const updateStatus = (status, obs) => {
+                    const next = [...checklist];
+                    next[currentIdx].status = status;
+                    next[currentIdx].obs = obs;
+                    setChecklist(next);
                 };
 
-                emailjs.init("L_pUEcfq0dD7rcw5p");
-                emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams)
-                    .then(() => {
-                        alert("Relatório enviado!");
-                        setStep('home');
-                        setSending(false);
-                    })
-                    .catch(() => {
-                        alert("Erro ao enviar. Verifique a conexão.");
-                        setSending(false);
-                    });
-            };
-
-            return (
-                <div className="min-h-screen p-4">
-                    {step === 'home' && (
-                        <div className="max-w-md mx-auto space-y-6 mt-10">
-                            <h1 className="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes</h1>
-                            <input className="w-full p-3 bg-slate-800 rounded border border-slate-700 text-white" placeholder="Nome do Bombeiro" onChange={(e) => setFirefighter({...firefighter, name: e.target.value})} />
-                            <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold text-white">Iniciar Vistoria</button>
-                        </div>
-                    )}
-
-                    {step === 'checklist' && (
-                        <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-lg text-white">
-                            <h2 className="text-xl font-bold mb-4">Hidrante {currentIdx + 1}/7</h2>
-                            <p className="text-slate-400 mb-2">{checklist[currentIdx].address}</p>
-                            <div className="flex gap-2 mb-4">
-                                <button onClick={() => updateStatus('OK', '')} className={`flex-1 p-2 rounded ${checklist[currentIdx].status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}`}>OK</button>
-                                <button onClick={() => updateStatus('Problema', checklist[currentIdx].obs)} className={`flex-1 p-2 rounded ${checklist[currentIdx].status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}`}>Problema</button>
+                return (
+                    <div className="min-h-screen p-4 max-w-lg mx-auto">
+                        {step === 'home' && (
+                            <div className="space-y-6 mt-10">
+                                <h1 className="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes - Penha</h1>
+                                <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" placeholder="Responsável (Posto/Nome)" onChange={(e) => setData({...data, name: e.target.value})} />
+                                <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Conferência</button>
                             </div>
-                            {checklist[currentIdx].status !== 'OK' && (
-                                <textarea className="w-full p-2 bg-slate-900 rounded mb-4 text-white" placeholder="Detalhes..." onChange={(e) => updateStatus('Problema', e.target.value)} />
-                            )}
-                            <div className="flex justify-between mt-4">
-                                <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="bg-slate-700 px-4 py-2 rounded">Voltar</button>
-                                {currentIdx < 6 ? <button onClick={() => setCurrentIdx(currentIdx + 1)} className="bg-slate-700 px-4 py-2 rounded">Próximo</button> : <button onClick={() => setStep('summary')} className="bg-blue-600 px-4 py-2 rounded">Finalizar</button>}
-                            </div>
-                        </div>
-                    )}
+                        )}
 
-                    {step === 'summary' && (
-                        <div className="max-w-md mx-auto space-y-4 mt-10">
-                            <h2 className="text-xl font-bold text-center">Resumo da Vistoria</h2>
-                            <button onClick={sendEmail} disabled={sending} className="w-full bg-red-600 p-4 rounded font-bold text-white">
-                                {sending ? "Enviando..." : "Transmitir Relatório ao Comando"}
-                            </button>
-                        </div>
-                    )}
-                </div>
-            );
+                        {step === 'checklist' && (
+                            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                                <h2 className="text-lg font-bold mb-4 text-red-400">Hidrante {currentIdx + 1}/7</h2>
+                                <p className="text-sm mb-6 text-slate-300">{checklist[currentIdx].address}</p>
+                                
+                                <div className="space-y-3 mb-6">
+                                    <button onClick={() => updateStatus('OPERANTE', '')} className={`w-full p-4 rounded-xl font-bold ${checklist[currentIdx].status === 'OPERANTE' ? 'bg-green-700' : 'bg-slate-800'}`}>OPERANTE</button>
+                                    <button onClick={() => updateStatus('OUTRO', checklist[currentIdx].obs)} className={`w-full p-4 rounded-xl font-bold ${checklist[currentIdx].status !== 'OPERANTE' ? 'bg-red-700' : 'bg-slate-800'}`}>OUTRO / PROBLEMA</button>
+                                </div>
+
+                                {checklist[currentIdx].status !== 'OPERANTE' && (
+                                    <textarea className="w-full p-3 bg-slate-800 rounded mb-4 text-sm" placeholder="Descreva a observação..." onChange={(e) => updateStatus('OUTRO', e.target.value)} />
+                                )}
+
+                                <div className="flex gap-2">
+                                    <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="flex-1 bg-slate-800 p-3 rounded">Voltar</button>
+                                    {currentIdx < 6 ? 
+                                        <button onClick={() => setCurrentIdx(currentIdx + 1)} className="flex-1 bg-red-600 p-3 rounded font-bold">Próximo</button> : 
+                                        <button onClick={() => setStep('final')} className="flex-1 bg-blue-600 p-3 rounded font-bold">Finalizar</button>
+                                    }
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 'final' && (
+                            <div className="space-y-4 text-center mt-10">
+                                <h2 className="text-xl font-bold">Conferência concluída</h2>
+                                <button onClick={() => window.location.reload()} className="w-full bg-slate-800 p-4 rounded">Voltar ao início</button>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        } catch (error) {
+            console.error("Erro ao carregar o App:", error);
+            document.getElementById('root').innerHTML = '<div class="p-10 text-red-500">Erro ao carregar. Tente novamente mais tarde.</div>';
         }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
     </script>
 </body>
 </html>
