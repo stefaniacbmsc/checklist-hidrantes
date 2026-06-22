@@ -17,34 +17,43 @@ export default function App() {
   const [firefighter, setFirefighter] = useState({ name: "" });
   const [lastInspector, setLastInspector] = useState(null);
   const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '' })));
-  
-  // Carrega o último vistoriador ao abrir o app
+  const [currentIdx, setCurrentIdx] = useState(0);
+
   useEffect(() => {
     const saved = localStorage.getItem('lastInspector');
     if (saved) setLastInspector(JSON.parse(saved));
   }, []);
 
+  const updateStatus = (status, obs) => {
+    const next = [...checklist];
+    next[currentIdx].status = status;
+    next[currentIdx].obs = obs;
+    setChecklist(next);
+  };
+
   const sendEmail = () => {
     const issues = checklist.filter(h => h.status !== 'OK');
     
     const templateParams = {
-      to_email: "7221cmt@cbm.sc.gov.br", // Seu e-mail de destino
+      to_email: "7221cmt@cbm.sc.gov.br",
       firefighter_name: firefighter.name,
-      date: new Date().toLocaleDateString(),
-      details: issues.length > 0 ? issues.map(i => `${i.address}: ${i.obs}`).join(" | ") : "Nenhuma alteração.",
-      status: issues.length > 0 ? "Com Problemas" : "Tudo Operante"
+      date: new Date().toLocaleDateString('pt-BR'),
+      details: issues.length > 0 
+        ? issues.map(i => `${i.address} (${i.status}): ${i.obs}`).join(" | ") 
+        : "Nenhuma alteração.",
+      status: issues.length > 0 ? "Com Problemas/Impedimentos" : "Tudo Operante"
     };
 
     emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams, 'L_pUEcfq0dD7rcw5p')
       .then(() => {
-        // Salva o último bombeiro no histórico local
         const record = { name: firefighter.name, date: new Date().toLocaleString() };
         localStorage.setItem('lastInspector', JSON.stringify(record));
         setLastInspector(record);
-        
-        alert("Relatório enviado e histórico atualizado!");
+        alert("Relatório enviado com sucesso!");
         setStep('home');
-      });
+        setCurrentIdx(0);
+      })
+      .catch(() => alert("Erro ao enviar. Verifique a conexão."));
   };
 
   return (
@@ -52,23 +61,44 @@ export default function App() {
       {step === 'home' && (
         <div className="max-w-md mx-auto space-y-6">
           <h1 className="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes</h1>
-          
           {lastInspector && (
             <div className="bg-slate-800 p-4 rounded-lg border-l-4 border-blue-500 text-sm">
               <p className="flex items-center gap-2 font-bold"><Clock size={16}/> Última Vistoria:</p>
               <p>{lastInspector.name} em {lastInspector.date}</p>
             </div>
           )}
-
           <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" 
                  placeholder="Nome do Bombeiro" 
                  onChange={(e) => setFirefighter({name: e.target.value})} />
-                 
           <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
         </div>
       )}
-      
-      {/* ... (restante da lógica de checklist igual ao anterior) ... */}
+
+      {step === 'checklist' && (
+        <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-lg text-white">
+          <h2 className="text-xl font-bold mb-4">Hidrante {currentIdx + 1}/7</h2>
+          <p className="text-slate-300 mb-4">{checklist[currentIdx].address}</p>
+          
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <button onClick={() => updateStatus('OK', '')} className={`p-3 rounded ${checklist[currentIdx].status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}`}>OK</button>
+            <button onClick={() => updateStatus('Problema', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}`}>Problema/Sem Água</button>
+          </div>
+
+          {checklist[currentIdx].status !== 'OK' && (
+            <textarea className="w-full p-3 bg-slate-900 rounded mb-4" 
+                      placeholder="Justifique (ex: Sem água, não foi possível abrir)..." 
+                      onChange={(e) => updateStatus('Problema', e.target.value)} />
+          )}
+
+          <div className="flex justify-between">
+            <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="px-4 py-2 bg-slate-700 rounded">Voltar</button>
+            {currentIdx < 6 ? 
+              <button onClick={() => setCurrentIdx(currentIdx + 1)} className="px-4 py-2 bg-slate-700 rounded">Próximo</button> :
+              <button onClick={() => sendEmail()} className="px-4 py-2 bg-blue-600 rounded font-bold">Enviar Relatório</button>
+            }
+          </div>
+        </div>
+      )}
     </div>
   );
 }
