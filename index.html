@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checklist Hidrantes CBMSC</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-slate-900 text-slate-100">
     <div id="root"></div>
@@ -71,7 +76,7 @@
                         const record = { name: firefighter.name, date: new Date().toLocaleString() };
                         localStorage.setItem('lastInspector', JSON.stringify(record));
                         setLastInspector(record);
-                        alert("Relatório enviado!");
+                        alert("Relatório enviado com sucesso!");
                         setStep('home');
                     })
                     .catch(() => alert("Erro ao enviar."));
@@ -123,10 +128,3 @@
     </script>
 </body>
 </html>
-```
-
-### O que fazer agora:
-1.  **Copie o código acima.**
-2.  No seu GitHub, **substitua todo o conteúdo** do `index.html` por este.
-3.  Faça o **Commit**.
-4.  O Netlify vai processar. Quando você abrir o link, ele não vai mais travar porque o código já está formatado como uma "página única completa" que o navegador entende nativamente.
