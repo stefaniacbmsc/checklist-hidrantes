@@ -1,137 +1,99 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vistoria de Hidrantes - Penha</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script>
-        (function(){ emailjs.init("L_pUEcfq0dD7rcw5p"); })();
-    </script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4">
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, AlertTriangle, Send, User, ArrowLeft, ArrowRight, Clock, Camera, MapPin } from 'lucide-react';
 
-    <div class="max-w-md mx-auto">
-        <div class="flex items-center gap-4 bg-slate-900 p-4 rounded-xl border border-red-900 mb-6">
-            <svg class="w-12 h-12 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2c-3.87 0-7 3.13-7 7v2H4v2h2v7h12v-7h2v-2h-1V9c0-3.87-3.13-7-7-7zm0 2c2.76 0 5 2.24 5 5v2H7V9c0-2.76 2.24-5 5-5zM9 13h6v6H9v-6z"/>
-            </svg>
-            <h1 class="text-xl font-bold text-red-500 leading-tight">Vistoria de Hidrantes<br><span class="text-slate-300">Penha - SC</span></h1>
-        </div>
+const HYDRANTS = [
+  { id: 1, address: "Rua Antônio Joaquim Tavares, 942", mapsLink: "https://maps.app.goo.gl/placeholder1" },
+  { id: 2, address: "Rua Inácio Francisco de Souza", mapsLink: "https://maps.app.goo.gl/placeholder2" },
+  { id: 3, address: "Rua José Domiciliano Pereira", mapsLink: "https://maps.app.goo.gl/placeholder3" },
+  { id: 4, address: "Av. Nereu Ramos, 889", mapsLink: "https://maps.app.goo.gl/placeholder4" },
+  { id: 5, address: "Av. Nereu Ramos (Posto Delta)", mapsLink: "https://maps.app.goo.gl/placeholder5" },
+  { id: 6, address: "Rua Marciano Luiz Bento", mapsLink: "https://maps.app.goo.gl/placeholder6" },
+  { id: 7, address: "Rua Inacio Jacinto Albano, 2233", mapsLink: "https://maps.app.goo.gl/placeholder7" }
+];
 
-        <div id="history-box" class="bg-slate-900 p-4 rounded-lg border border-slate-800 mb-6 hidden">
-            <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Último Vistoriador:</p>
-            <p id="last-inspector-name" class="font-bold text-white text-lg"></p>
-        </div>
+export default function App() {
+  const [step, setStep] = useState('home');
+  const [firefighter, setFirefighter] = useState({ name: "" });
+  const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '', photo: null })));
+  const [currentIdx, setCurrentIdx] = useState(0);
 
-        <div id="app">
-            <label class="block text-sm mb-2 text-slate-400">Nome do Bombeiro (Obrigatório)</label>
-            <input id="nameInput" type="text" placeholder="Ex: SD BM Silva" class="w-full p-4 bg-slate-900 rounded-lg mb-6 border border-slate-700 text-white outline-none focus:border-red-500">
-            <button onclick="startVistoria()" class="w-full bg-red-600 p-4 rounded-lg font-bold hover:bg-red-700 transition shadow-lg shadow-red-900/20">Iniciar Vistoria</button>
+  const updateStatus = (status, obs) => {
+    const next = [...checklist];
+    next[currentIdx].status = status;
+    next[currentIdx].obs = obs;
+    setChecklist(next);
+  };
+
+  const sendEmail = () => {
+    // Verificamos se o emailjs carregou no navegador (window.emailjs)
+    if (!window.emailjs) {
+      alert("Erro: O serviço de e-mail não foi carregado corretamente.");
+      return;
+    }
+
+    const issues = checklist.filter(h => h.status !== 'OK');
+    const templateParams = {
+      to_email: "7221cmt@cbm.sc.gov.br",
+      firefighter_name: firefighter.name,
+      date: new Date().toLocaleDateString('pt-BR'),
+      details: issues.length > 0 
+        ? issues.map(i => `${i.address} (${i.status}): ${i.obs}`).join("\n") 
+        : "Nenhuma alteração.",
+    };
+
+    window.emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams, 'L_pUEcfq0dD7rcw5p')
+      .then(() => {
+        localStorage.setItem('lastInspector', JSON.stringify({ name: firefighter.name, date: new Date().toLocaleString() }));
+        alert("Muito obrigado! Relatório enviado com sucesso.");
+        setStep('home');
+      })
+      .catch((err) => {
+        console.error("Erro ao enviar:", err);
+        alert("Erro ao enviar e-mail. Verifique a conexão.");
+      });
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 p-4">
+      {step === 'home' && (
+        <div className="max-w-md mx-auto space-y-6">
+          <div className="flex items-center justify-center gap-4">
+            <div className="text-red-500">
+               <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
+            </div>
+            <h1 className="text-2xl font-bold text-center">Vistoria Hidrantes Penha</h1>
+          </div>
+          <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" placeholder="Nome do Bombeiro" onChange={(e) => setFirefighter({name: e.target.value})} />
+          <button onClick={() => firefighter.name && setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
         </div>
+      )}
+
+      {step === 'checklist' && (
+        <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-lg text-white">
+          <h2 className="text-xl font-bold mb-2">Hidrante {currentIdx + 1}/7</h2>
+          <p className="text-slate-100 font-semibold">{checklist[currentIdx].address}</p>
+          <a href={checklist[currentIdx].mapsLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-400 text-sm mb-4 underline">
+            <MapPin size={16} /> Abrir no Google Maps
+          </a>
+          
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <button onClick={() => updateStatus('OPERANTE', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status === 'OPERANTE' ? 'bg-green-600' : 'bg-slate-700'}`}>OPERANTE</button>
+            <button onClick={() => updateStatus('PROBLEMA', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status === 'PROBLEMA' ? 'bg-red-600' : 'bg-slate-700'}`}>PROBLEMA</button>
+          </div>
+
+          {checklist[currentIdx].status === 'PROBLEMA' && (
+            <textarea className="w-full p-3 bg-slate-900 rounded mb-4 border border-red-500" placeholder="Descreva o problema..." onChange={(e) => updateStatus('PROBLEMA', e.target.value)} />
+          )}
+
+          <div className="flex justify-between mt-6">
+            <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="px-4 py-2 bg-slate-700 rounded">Voltar</button>
+            {currentIdx < 6 ? 
+              <button onClick={() => setCurrentIdx(currentIdx + 1)} className="px-4 py-2 bg-slate-700 rounded">Próximo</button> :
+              <button onClick={sendEmail} className="px-4 py-2 bg-blue-600 rounded font-bold">Enviar Relatório</button>
+            }
+          </div>
+        </div>
+      )}
     </div>
-
-    <script>
-        window.onload = function() {
-            const last = localStorage.getItem('lastInspector');
-            if(last) {
-                document.getElementById('history-box').classList.remove('hidden');
-                document.getElementById('last-inspector-name').innerText = last;
-            }
-        };
-
-        const HYDRANTS = [
-            "Rua Antônio Joaquim Tavares, 942, Centro",
-            "Rua Inácio Francisco de Souza, Armação",
-            "Rua José Domiciliano Pereira, Armação",
-            "Av. Nereu Ramos, 889, Centro",
-            "Av. Nereu Ramos (Posto Delta), Centro",
-            "Rua Marciano Luiz Bento, Gravatá",
-            "Rua Inacio Jacinto Albano, 2233, Armação"
-        ];
-
-        let state = {
-            inspectorName: '',
-            results: HYDRANTS.map(() => ({ status: 'OPERANTE', obs: '' })),
-            currentIdx: 0
-        };
-
-        function startVistoria() {
-            const name = document.getElementById('nameInput').value.trim();
-            if(!name) return alert("Por favor, informe seu nome.");
-            state.inspectorName = name;
-            renderChecklist();
-        }
-
-        function renderChecklist() {
-            const app = document.getElementById('app');
-            const address = HYDRANTS[state.currentIdx];
-            const res = state.results[state.currentIdx];
-            
-            app.innerHTML = `
-                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
-                    <h2 class="text-sm text-slate-500 mb-1 font-bold uppercase">Hidrante ${state.currentIdx + 1} de 7</h2>
-                    <p class="text-lg font-bold text-white mb-6">${address}</p>
-                    
-                    <div class="flex gap-3 mb-6">
-                        <button onclick="updateStatus('OPERANTE')" class="flex-1 p-4 rounded-lg font-bold ${res.status === 'OPERANTE' ? 'bg-green-700' : 'bg-slate-800'}">OPERANTE</button>
-                        <button onclick="updateStatus('PROBLEMA')" class="flex-1 p-4 rounded-lg font-bold ${res.status === 'PROBLEMA' ? 'bg-red-700' : 'bg-slate-800'}">PROBLEMA</button>
-                    </div>
-
-                    ${res.status === 'PROBLEMA' ? `
-                        <textarea id="obsInput" onchange="state.results[state.currentIdx].obs = this.value" class="w-full p-4 bg-slate-950 rounded-lg mb-6 border border-slate-700 text-white" placeholder="Descreva o problema (Ex: Sem água)...">${res.obs}</textarea>
-                    ` : ''}
-
-                    <div class="flex justify-between gap-2">
-                        <button onclick="changeIdx(-1)" class="flex-1 bg-slate-800 p-3 rounded-lg">Voltar</button>
-                        ${state.currentIdx < 6 
-                            ? `<button onclick="changeIdx(1)" class="flex-1 bg-slate-700 p-3 rounded-lg font-bold">Próximo</button>`
-                            : `<button onclick="sendReport()" class="flex-1 bg-blue-600 p-3 rounded-lg font-bold shadow-lg shadow-blue-900/20">Enviar Relatório</button>`}
-                    </div>
-                </div>
-            `;
-        }
-
-        function updateStatus(status) {
-            state.results[state.currentIdx].status = status;
-            renderChecklist();
-        }
-
-        function changeIdx(dir) {
-            if(state.results[state.currentIdx].status === 'PROBLEMA' && !state.results[state.currentIdx].obs) {
-                return alert("Por favor, descreva o problema deste hidrante.");
-            }
-            state.currentIdx = Math.max(0, Math.min(6, state.currentIdx + dir));
-            renderChecklist();
-        }
-
-        function sendReport() {
-            // Cada hidrante ganha uma nova linha (\n) no e-mail
-            const details = state.results.map((r, i) => {
-                const statusLabel = r.status === 'PROBLEMA' ? '[!!! PROBLEMA !!!]' : '[OPERANTE]';
-                return `${HYDRANTS[i]} -> ${statusLabel} ${r.obs ? 'Obs: ' + r.obs : ''}`;
-            }).join("\n"); 
-            
-            const templateParams = {
-                to_email: "7221cmt@cbm.sc.gov.br",
-                firefighter_name: state.inspectorName,
-                date: new Date().toLocaleDateString('pt-BR'),
-                details: details,
-                status: state.results.some(r => r.status === 'PROBLEMA') ? "Com Problemas" : "Tudo Operante"
-            };
-
-            emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams)
-                .then(() => {
-                    localStorage.setItem('lastInspector', state.inspectorName);
-                    alert("Relatório enviado! Muito obrigado pela colaboração com a segurança de Penha.");
-                    location.reload(); 
-                })
-                .catch((err) => {
-                    console.error(err);
-                    alert("Erro ao enviar. Verifique a internet.");
-                });
-        }
-    </script>
-</body>
-</html>
+  );
+}
