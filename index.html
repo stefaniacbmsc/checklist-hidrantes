@@ -1,122 +1,132 @@
-import React, { useState, useEffect } from 'react';
-import emailjs from 'emailjs-com';
-import { CheckCircle, AlertTriangle, Send, User, ArrowLeft, ArrowRight, Clock, Camera } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Hidrantes CBMSC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100">
+    <div id="root"></div>
 
-const HYDRANTS = [
-  { id: 1, address: "Rua Antônio Joaquim Tavares, 942", neighborhood: "Centro" },
-  { id: 2, address: "Rua Inácio Francisco de Souza", neighborhood: "Armação" },
-  { id: 3, address: "Rua José Domiciliano Pereira", neighborhood: "Armação" },
-  { id: 4, address: "Av. Nereu Ramos, 889", neighborhood: "Centro" },
-  { id: 5, address: "Av. Nereu Ramos (Posto Delta)", neighborhood: "Centro" },
-  { id: 6, address: "Rua Marciano Luiz Bento", neighborhood: "Gravatá" },
-  { id: 7, address: "Rua Inacio Jacinto Albano, 2233", neighborhood: "Armação" }
-];
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-export default function App() {
-  const [step, setStep] = useState('home');
-  const [firefighter, setFirefighter] = useState({ name: "" });
-  const [lastInspector, setLastInspector] = useState(null);
-  const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '', photo: null })));
-  const [currentIdx, setCurrentIdx] = useState(0);
+        const HYDRANTS = [
+            { id: 1, address: "Rua Antônio Joaquim Tavares, 942", neighborhood: "Centro" },
+            { id: 2, address: "Rua Inácio Francisco de Souza", neighborhood: "Armação" },
+            { id: 3, address: "Rua José Domiciliano Pereira", neighborhood: "Armação" },
+            { id: 4, address: "Av. Nereu Ramos, 889", neighborhood: "Centro" },
+            { id: 5, address: "Av. Nereu Ramos (Posto Delta)", neighborhood: "Centro" },
+            { id: 6, address: "Rua Marciano Luiz Bento", neighborhood: "Gravatá" },
+            { id: 7, address: "Rua Inacio Jacinto Albano, 2233", neighborhood: "Armação" }
+        ];
 
-  useEffect(() => {
-    const saved = localStorage.getItem('lastInspector');
-    if (saved) setLastInspector(JSON.parse(saved));
-  }, []);
+        function App() {
+            const [step, setStep] = useState('home');
+            const [firefighter, setFirefighter] = useState({ name: "" });
+            const [lastInspector, setLastInspector] = useState(null);
+            const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '', photo: null })));
+            const [currentIdx, setCurrentIdx] = useState(0);
 
-  const updateStatus = (status, obs, photo = null) => {
-    const next = [...checklist];
-    next[currentIdx].status = status;
-    next[currentIdx].obs = obs;
-    if (photo) next[currentIdx].photo = photo;
-    setChecklist(next);
-  };
+            useEffect(() => {
+                const saved = localStorage.getItem('lastInspector');
+                if (saved) setLastInspector(JSON.parse(saved));
+                emailjs.init("L_pUEcfq0dD7rcw5p");
+            }, []);
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateStatus(checklist[currentIdx].status, checklist[currentIdx].obs, reader.result);
-      };
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
+            const updateStatus = (status, obs, photo = null) => {
+                const next = [...checklist];
+                next[currentIdx].status = status;
+                next[currentIdx].obs = obs;
+                if (photo) next[currentIdx].photo = photo;
+                setChecklist(next);
+            };
 
-  const sendEmail = () => {
-    const issues = checklist.filter(h => h.status !== 'OK');
-    
-    const templateParams = {
-      to_email: "7221cmt@cbm.sc.gov.br",
-      firefighter_name: firefighter.name,
-      date: new Date().toLocaleDateString('pt-BR'),
-      details: issues.length > 0 
-        ? issues.map(i => `${i.address} (${i.status}): ${i.obs} ${i.photo ? '[Foto Anexada]' : ''}`).join(" | ") 
-        : "Nenhuma alteração.",
-      status: issues.length > 0 ? "Com Problemas/Impedimentos" : "Tudo Operante"
-    };
+            const handleFileChange = (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        updateStatus(checklist[currentIdx].status, checklist[currentIdx].obs, reader.result);
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            };
 
-    emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams, 'L_pUEcfq0dD7rcw5p')
-      .then(() => {
-        const record = { name: firefighter.name, date: new Date().toLocaleString() };
-        localStorage.setItem('lastInspector', JSON.stringify(record));
-        setLastInspector(record);
-        alert("Relatório enviado com sucesso!");
-        setStep('home');
-        setCurrentIdx(0);
-      })
-      .catch(() => alert("Erro ao enviar. Verifique a conexão."));
-  };
+            const sendEmail = () => {
+                const issues = checklist.filter(h => h.status !== 'OK');
+                const templateParams = {
+                    firefighter_name: firefighter.name,
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    details: issues.length > 0 ? issues.map(i => `${i.address} (${i.status}): ${i.obs} ${i.photo ? '[Foto]' : ''}`).join(" | ") : "Tudo Operante.",
+                    status: issues.length > 0 ? "Com Problemas" : "Sem Alterações"
+                };
 
-  return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-4">
-      {step === 'home' && (
-        <div className="max-w-md mx-auto space-y-6">
-          <h1 className="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes</h1>
-          {lastInspector && (
-            <div className="bg-slate-800 p-4 rounded-lg border-l-4 border-blue-500 text-sm">
-              <p className="flex items-center gap-2 font-bold"><Clock size={16}/> Última Vistoria:</p>
-              <p>{lastInspector.name} em {lastInspector.date}</p>
-            </div>
-          )}
-          <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" 
-                 placeholder="Nome do Bombeiro" 
-                 onChange={(e) => setFirefighter({name: e.target.value})} />
-          <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
-        </div>
-      )}
+                emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams)
+                    .then(() => {
+                        const record = { name: firefighter.name, date: new Date().toLocaleString() };
+                        localStorage.setItem('lastInspector', JSON.stringify(record));
+                        setLastInspector(record);
+                        alert("Relatório enviado!");
+                        setStep('home');
+                    })
+                    .catch(() => alert("Erro ao enviar."));
+            };
 
-      {step === 'checklist' && (
-        <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-lg text-white">
-          <h2 className="text-xl font-bold mb-4">Hidrante {currentIdx + 1}/7</h2>
-          <p className="text-slate-300 mb-4">{checklist[currentIdx].address}</p>
-          
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <button onClick={() => updateStatus('OK', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}`}>OK</button>
-            <button onClick={() => updateStatus('Problema', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}`}>Problema</button>
-          </div>
+            return (
+                <div className="min-h-screen p-4">
+                    {step === 'home' && (
+                        <div className="max-w-md mx-auto space-y-6 mt-10">
+                            <h1 className="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes</h1>
+                            {lastInspector && (
+                                <div className="bg-slate-800 p-4 rounded-lg border-l-4 border-blue-500 text-sm">
+                                    <p className="font-bold">Última Vistoria:</p>
+                                    <p>{lastInspector.name} em {lastInspector.date}</p>
+                                </div>
+                            )}
+                            <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" placeholder="Nome do Bombeiro" onChange={(e) => setFirefighter({name: e.target.value})} />
+                            <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
+                        </div>
+                    )}
 
-          {checklist[currentIdx].status !== 'OK' && (
-            <textarea className="w-full p-3 bg-slate-900 rounded mb-4" 
-                      placeholder="Justifique (ex: Sem água, não foi possível abrir)..." 
-                      onChange={(e) => updateStatus('Problema', e.target.value)} />
-          )}
+                    {step === 'checklist' && (
+                        <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-lg">
+                            <h2 className="text-xl font-bold mb-4">Hidrante {currentIdx + 1}/7</h2>
+                            <p className="text-slate-300 mb-4">{checklist[currentIdx].address}</p>
+                            <div className="flex gap-2 mb-4">
+                                <button onClick={() => updateStatus('OK', checklist[currentIdx].obs)} className={`flex-1 p-3 rounded ${checklist[currentIdx].status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}`}>OK</button>
+                                <button onClick={() => updateStatus('Problema', checklist[currentIdx].obs)} className={`flex-1 p-3 rounded ${checklist[currentIdx].status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}`}>Problema</button>
+                            </div>
+                            {checklist[currentIdx].status !== 'OK' && (
+                                <textarea className="w-full p-3 bg-slate-900 rounded mb-4" placeholder="Justifique..." onChange={(e) => updateStatus('Problema', e.target.value)} />
+                            )}
+                            <label className="block bg-slate-900 p-3 rounded mb-4 text-center cursor-pointer">
+                                {checklist[currentIdx].photo ? 'Foto Capturada' : 'Tirar Foto'}
+                                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+                            </label>
+                            <div className="flex justify-between">
+                                <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="px-4 py-2 bg-slate-700 rounded">Voltar</button>
+                                {currentIdx < 6 ? <button onClick={() => setCurrentIdx(currentIdx + 1)} className="px-4 py-2 bg-slate-700 rounded">Próximo</button> : <button onClick={sendEmail} className="px-4 py-2 bg-blue-600 rounded">Finalizar</button>}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
 
-          <div className="mb-4">
-            <label className="flex items-center gap-2 bg-slate-900 p-3 rounded cursor-pointer hover:bg-slate-700">
-              <Camera size={20} /> {checklist[currentIdx].photo ? 'Foto Capturada' : 'Tirar Foto do Hidrante'}
-              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
-            </label>
-          </div>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+```
 
-          <div className="flex justify-between">
-            <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="px-4 py-2 bg-slate-700 rounded">Voltar</button>
-            {currentIdx < 6 ? 
-              <button onClick={() => setCurrentIdx(currentIdx + 1)} className="px-4 py-2 bg-slate-700 rounded">Próximo</button> :
-              <button onClick={() => sendEmail()} className="px-4 py-2 bg-blue-600 rounded font-bold">Enviar Relatório</button>
-            }
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+### O que fazer agora:
+1.  **Copie o código acima.**
+2.  No seu GitHub, **substitua todo o conteúdo** do `index.html` por este.
+3.  Faça o **Commit**.
+4.  O Netlify vai processar. Quando você abrir o link, ele não vai mais travar porque o código já está formatado como uma "página única completa" que o navegador entende nativamente.
