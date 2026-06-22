@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import emailjs from 'emailjs-com';
-import { CheckCircle, AlertTriangle, Send, User, ArrowLeft, ArrowRight, Clock } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Send, User, ArrowLeft, ArrowRight, Clock, Camera } from 'lucide-react';
 
 const HYDRANTS = [
   { id: 1, address: "Rua Antônio Joaquim Tavares, 942", neighborhood: "Centro" },
@@ -16,7 +16,7 @@ export default function App() {
   const [step, setStep] = useState('home');
   const [firefighter, setFirefighter] = useState({ name: "" });
   const [lastInspector, setLastInspector] = useState(null);
-  const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '' })));
+  const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '', photo: null })));
   const [currentIdx, setCurrentIdx] = useState(0);
 
   useEffect(() => {
@@ -24,11 +24,22 @@ export default function App() {
     if (saved) setLastInspector(JSON.parse(saved));
   }, []);
 
-  const updateStatus = (status, obs) => {
+  const updateStatus = (status, obs, photo = null) => {
     const next = [...checklist];
     next[currentIdx].status = status;
     next[currentIdx].obs = obs;
+    if (photo) next[currentIdx].photo = photo;
     setChecklist(next);
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateStatus(checklist[currentIdx].status, checklist[currentIdx].obs, reader.result);
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
   };
 
   const sendEmail = () => {
@@ -39,7 +50,7 @@ export default function App() {
       firefighter_name: firefighter.name,
       date: new Date().toLocaleDateString('pt-BR'),
       details: issues.length > 0 
-        ? issues.map(i => `${i.address} (${i.status}): ${i.obs}`).join(" | ") 
+        ? issues.map(i => `${i.address} (${i.status}): ${i.obs} ${i.photo ? '[Foto Anexada]' : ''}`).join(" | ") 
         : "Nenhuma alteração.",
       status: issues.length > 0 ? "Com Problemas/Impedimentos" : "Tudo Operante"
     };
@@ -80,8 +91,8 @@ export default function App() {
           <p className="text-slate-300 mb-4">{checklist[currentIdx].address}</p>
           
           <div className="grid grid-cols-2 gap-2 mb-4">
-            <button onClick={() => updateStatus('OK', '')} className={`p-3 rounded ${checklist[currentIdx].status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}`}>OK</button>
-            <button onClick={() => updateStatus('Problema', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}`}>Problema/Sem Água</button>
+            <button onClick={() => updateStatus('OK', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}`}>OK</button>
+            <button onClick={() => updateStatus('Problema', checklist[currentIdx].obs)} className={`p-3 rounded ${checklist[currentIdx].status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}`}>Problema</button>
           </div>
 
           {checklist[currentIdx].status !== 'OK' && (
@@ -89,6 +100,13 @@ export default function App() {
                       placeholder="Justifique (ex: Sem água, não foi possível abrir)..." 
                       onChange={(e) => updateStatus('Problema', e.target.value)} />
           )}
+
+          <div className="mb-4">
+            <label className="flex items-center gap-2 bg-slate-900 p-3 rounded cursor-pointer hover:bg-slate-700">
+              <Camera size={20} /> {checklist[currentIdx].photo ? 'Foto Capturada' : 'Tirar Foto do Hidrante'}
+              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+            </label>
+          </div>
 
           <div className="flex justify-between">
             <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="px-4 py-2 bg-slate-700 rounded">Voltar</button>
