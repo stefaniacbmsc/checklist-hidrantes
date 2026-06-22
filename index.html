@@ -3,84 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist Hidrantes CBMSC</title>
+    <title>Checklist Hidrantes CBMSC - Penha</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        (function(){ emailjs.init("L_pUEcfq0dD7rcw5p"); })();
+    </script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-    <div id="app" class="max-w-md mx-auto p-4"></div>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4">
+
+    <div class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold text-red-500 text-center mb-6">Vistoria de Hidrantes</h1>
+
+        <!-- Histórico do Último Bombeiro -->
+        <div id="history-box" class="bg-slate-800 p-4 rounded-lg border border-slate-700 mb-6 hidden">
+            <p class="text-xs text-slate-400 uppercase">Última vistoria realizada por:</p>
+            <p id="last-inspector-name" class="font-bold text-white text-lg"></p>
+        </div>
+
+        <div id="app">
+            <label class="block text-sm mb-2">Nome do Bombeiro (Obrigatório)</label>
+            <input id="nameInput" type="text" placeholder="Ex: SD BM Silva" class="w-full p-4 bg-slate-800 rounded mb-6 border border-slate-700 text-white">
+            <button onclick="startVistoria()" class="w-full bg-red-600 p-4 rounded font-bold hover:bg-red-700 transition">Iniciar Vistoria</button>
+        </div>
+    </div>
 
     <script>
-        emailjs.init("L_pUEcfq0dD7rcw5p");
+        // Carrega histórico ao abrir a página
+        window.onload = function() {
+            const last = localStorage.getItem('lastInspector');
+            if(last) {
+                document.getElementById('history-box').classList.remove('hidden');
+                document.getElementById('last-inspector-name').innerText = last;
+            }
+        };
 
         const HYDRANTS = [
-            "Rua Antônio Joaquim Tavares, 942, Centro",
-            "Rua Inácio Francisco de Souza, Armação",
-            "Rua José Domiciliano Pereira, Armação",
-            "Av. Nereu Ramos, 889, Centro",
-            "Av. Nereu Ramos, Posto Delta",
-            "Rua Marciano Luiz Bento, Gravatá",
-            "Rua Inacio Jacinto Albano, 2233, Armação"
+            "Rua Antônio Joaquim Tavares, 942, Centro (Próx. ao Ginásio)",
+            "Rua Inácio Francisco de Souza (Próx. Pousada Suite 8 - Beto Carrero)",
+            "Rua José Domiciliano Pereira (Av. Itapocoroi - Abastecimento usual)",
+            "Av. Nereu Ramos, 889 (Ao lado da Prefeitura)",
+            "Av. Nereu Ramos (Em frente ao Posto Delta)",
+            "Rua Marciano Luiz Bento, Gravatá (Asilo)",
+            "Rua Inacio Jacinto Albano, 2233, Armação (Em frente Villa Park Chalés)"
         ];
 
         let state = {
-            step: 'home',
-            inspectorName: localStorage.getItem('lastInspectorName') || '',
-            results: HYDRANTS.map(() => ({ status: 'OK', obs: '', photo: null })),
+            step: 'checklist',
+            inspectorName: '',
+            results: HYDRANTS.map(() => ({ status: 'OPERANTE', obs: '' })),
             currentIdx: 0
         };
 
-        function render() {
+        function startVistoria() {
+            const name = document.getElementById('nameInput').value;
+            if(!name) return alert("Por favor, informe seu nome.");
+            state.inspectorName = name;
+            renderChecklist();
+        }
+
+        function renderChecklist() {
             const app = document.getElementById('app');
-            if (state.step === 'home') {
-                app.innerHTML = `
-                    <h1 class="text-2xl font-bold text-red-500 text-center mb-6">Vistoria de Hidrantes</h1>
-                    <div class="bg-slate-800 p-4 rounded-lg mb-6">
-                        <p class="text-sm">Último inspetor: ${localStorage.getItem('lastInspectorName') || 'Nenhum'}</p>
+            const address = HYDRANTS[state.currentIdx];
+            const res = state.results[state.currentIdx];
+            
+            app.innerHTML = `
+                <div class="bg-slate-800 p-6 rounded-lg">
+                    <h2 class="text-sm text-slate-400 mb-1">Hidrante ${state.currentIdx + 1} de 7</h2>
+                    <p class="text-lg font-bold mb-6 ${res.status === 'PROBLEMA' ? 'text-red-500' : 'text-white'}">${address}</p>
+                    
+                    <div class="flex gap-3 mb-6">
+                        <button onclick="updateStatus('OPERANTE')" class="flex-1 p-4 rounded-lg font-bold ${res.status === 'OPERANTE' ? 'bg-green-600' : 'bg-slate-700'}">OPERANTE</button>
+                        <button onclick="updateStatus('PROBLEMA')" class="flex-1 p-4 rounded-lg font-bold ${res.status === 'PROBLEMA' ? 'bg-red-600' : 'bg-slate-700'}">PROBLEMA</button>
                     </div>
-                    <input id="name" type="text" value="${state.inspectorName}" placeholder="Nome do Bombeiro" class="w-full p-3 bg-slate-800 rounded mb-4 text-white border border-slate-700" onchange="state.inspectorName = this.value">
-                    <button onclick="state.step='checklist'; render()" class="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
-                `;
-            } else {
-                const item = HYDRANTS[state.currentIdx];
-                const res = state.results[state.currentIdx];
-                app.innerHTML = `
-                    <h2 class="text-xl font-bold mb-4">Hidrante ${state.currentIdx + 1}/7</h2>
-                    <p class="mb-4">${item}</p>
-                    <div class="flex gap-2 mb-4">
-                        <button onclick="updateStatus('OK')" class="flex-1 p-3 rounded ${res.status === 'OK' ? 'bg-green-600' : 'bg-slate-700'}">OK</button>
-                        <button onclick="updateStatus('Problema')" class="flex-1 p-3 rounded ${res.status !== 'OK' ? 'bg-red-600' : 'bg-slate-700'}">Problema</button>
+
+                    ${res.status === 'PROBLEMA' ? `
+                        <textarea id="obsInput" onchange="state.results[state.currentIdx].obs = this.value" class="w-full p-4 bg-slate-900 rounded mb-6 border border-slate-700" placeholder="Descreva o problema (Obrigatório)...">${res.obs}</textarea>
+                    ` : ''}
+
+                    <div class="flex justify-between gap-2">
+                        <button onclick="changeIdx(-1)" class="flex-1 bg-slate-700 p-3 rounded">Voltar</button>
+                        ${state.currentIdx < 6 
+                            ? `<button onclick="changeIdx(1)" class="flex-1 bg-slate-700 p-3 rounded">Próximo</button>`
+                            : `<button onclick="sendReport()" class="flex-1 bg-blue-600 p-3 rounded font-bold">Enviar Relatório</button>`}
                     </div>
-                    ${res.status !== 'OK' ? `<textarea onchange="state.results[state.currentIdx].obs = this.value" class="w-full p-3 bg-slate-800 rounded mb-4" placeholder="Justificativa...">${res.obs}</textarea>` : ''}
-                    <div class="flex justify-between mt-4">
-                        <button onclick="state.currentIdx = Math.max(0, state.currentIdx - 1); render()" class="bg-slate-700 px-4 py-2 rounded">Voltar</button>
-                        ${state.currentIdx < 6 ? 
-                            `<button onclick="state.currentIdx++; render()" class="bg-slate-700 px-4 py-2 rounded">Próximo</button>` : 
-                            `<button onclick="sendReport()" class="bg-blue-600 px-4 py-2 rounded">Enviar Relatório</button>`}
-                    </div>
-                `;
-            }
+                </div>
+            `;
         }
 
         function updateStatus(status) {
             state.results[state.currentIdx].status = status;
-            render();
+            renderChecklist();
+        }
+
+        function changeIdx(dir) {
+            if(state.results[state.currentIdx].status === 'PROBLEMA' && !state.results[state.currentIdx].obs) {
+                return alert("Preencha a observação para problemas.");
+            }
+            state.currentIdx = Math.max(0, Math.min(6, state.currentIdx + dir));
+            renderChecklist();
         }
 
         function sendReport() {
-            localStorage.setItem('lastInspectorName', state.inspectorName);
+            const details = state.results.map((r, i) => `${HYDRANTS[i]}: ${r.status} ${r.obs ? '('+r.obs+')' : ''}`).join(" | ");
+            
             const templateParams = {
+                to_email: "7221cmt@cbm.sc.gov.br",
                 firefighter_name: state.inspectorName,
-                date: new Date().toLocaleDateString(),
-                details: state.results.map((r, i) => `${HYDRANTS[i]}: ${r.status} ${r.obs}`).join(" | "),
-                status: "Finalizado"
+                date: new Date().toLocaleDateString('pt-BR'),
+                details: details,
+                status: state.results.some(r => r.status === 'PROBLEMA') ? "Com Problemas" : "Tudo Operante"
             };
-            emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams)
-                .then(() => { alert("Enviado!"); location.reload(); })
-                .catch(() => alert("Erro ao enviar."));
-        }
 
-        render();
+            emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams)
+                .then(() => {
+                    // Salva no histórico local
+                    localStorage.setItem('lastInspector', state.inspectorName);
+                    alert("Muito obrigado pela colaboração com a segurança de Penha!");
+                    location.reload(); 
+                })
+                .catch(() => alert("Erro ao enviar. Verifique a internet."));
+        }
     </script>
 </body>
 </html>
