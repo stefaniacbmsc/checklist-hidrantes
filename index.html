@@ -13,7 +13,6 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4">
 
     <div class="max-w-md mx-auto">
-        <!-- Cabeçalho com o Hidrante -->
         <div class="flex items-center gap-4 bg-slate-900 p-4 rounded-xl border border-red-900 mb-6">
             <svg class="w-12 h-12 text-red-600" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2c-3.87 0-7 3.13-7 7v2H4v2h2v7h12v-7h2v-2h-1V9c0-3.87-3.13-7-7-7zm0 2c2.76 0 5 2.24 5 5v2H7V9c0-2.76 2.24-5 5-5zM9 13h6v6H9v-6z"/>
@@ -21,7 +20,6 @@
             <h1 class="text-xl font-bold text-red-500 leading-tight">Vistoria de Hidrantes<br><span class="text-slate-300">Penha - SC</span></h1>
         </div>
 
-        <!-- Histórico -->
         <div id="history-box" class="bg-slate-900 p-4 rounded-lg border border-slate-800 mb-6 hidden">
             <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">Último Vistoriador:</p>
             <p id="last-inspector-name" class="font-bold text-white text-lg"></p>
@@ -44,13 +42,13 @@
         };
 
         const HYDRANTS = [
-            "Rua Antônio Joaquim Tavares, 942, Centro (Próx. ao Ginásio)",
-            "Rua Inácio Francisco de Souza (Próx. Pousada Suite 8 - Beto Carrero)",
-            "Rua José Domiciliano Pereira (Av. Itapocoroi - Abastecimento usual)",
-            "Av. Nereu Ramos, 889 (Ao lado da Prefeitura)",
-            "Av. Nereu Ramos (Em frente ao Posto Delta)",
-            "Rua Marciano Luiz Bento, Gravatá (Asilo)",
-            "Rua Inacio Jacinto Albano, 2233, Armação (Em frente Villa Park Chalés)"
+            "Rua Antônio Joaquim Tavares, 942, Centro",
+            "Rua Inácio Francisco de Souza, Armação",
+            "Rua José Domiciliano Pereira, Armação",
+            "Av. Nereu Ramos, 889, Centro",
+            "Av. Nereu Ramos (Posto Delta), Centro",
+            "Rua Marciano Luiz Bento, Gravatá",
+            "Rua Inacio Jacinto Albano, 2233, Armação"
         ];
 
         let state = {
@@ -60,7 +58,7 @@
         };
 
         function startVistoria() {
-            const name = document.getElementById('nameInput').value;
+            const name = document.getElementById('nameInput').value.trim();
             if(!name) return alert("Por favor, informe seu nome.");
             state.inspectorName = name;
             renderChecklist();
@@ -82,7 +80,7 @@
                     </div>
 
                     ${res.status === 'PROBLEMA' ? `
-                        <textarea id="obsInput" onchange="state.results[state.currentIdx].obs = this.value" class="w-full p-4 bg-slate-950 rounded-lg mb-6 border border-slate-700 text-white" placeholder="Justifique o problema (Ex: Sem água, não abre)...">${res.obs}</textarea>
+                        <textarea id="obsInput" onchange="state.results[state.currentIdx].obs = this.value" class="w-full p-4 bg-slate-950 rounded-lg mb-6 border border-slate-700 text-white" placeholder="Descreva o problema (Ex: Sem água)...">${res.obs}</textarea>
                     ` : ''}
 
                     <div class="flex justify-between gap-2">
@@ -109,11 +107,11 @@
         }
 
         function sendReport() {
-            // Formata o detalhamento para o e-mail com tag de destaque
+            // Cada hidrante ganha uma nova linha (\n) no e-mail
             const details = state.results.map((r, i) => {
-                const statusTag = r.status === 'PROBLEMA' ? ' [!!! PROBLEMA !!!]' : ' [OPERANTE]';
-                return `${HYDRANTS[i]}: ${statusTag} ${r.obs ? '- ' + r.obs : ''}`;
-            }).join("\n");
+                const statusLabel = r.status === 'PROBLEMA' ? '[!!! PROBLEMA !!!]' : '[OPERANTE]';
+                return `${HYDRANTS[i]} -> ${statusLabel} ${r.obs ? 'Obs: ' + r.obs : ''}`;
+            }).join("\n"); 
             
             const templateParams = {
                 to_email: "7221cmt@cbm.sc.gov.br",
