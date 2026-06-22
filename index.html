@@ -3,92 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist Hidrantes CBMSC</title>
-    <!-- Tailwind CSS -->
+    <title>Checklist Hidrantes</title>
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel para compilar JSX -->
-    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- EmailJS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- React -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100">
+<body class="bg-slate-900 text-white">
 
-    <!-- Container onde o React vai aparecer -->
     <div id="root">
-        <div class="flex h-screen items-center justify-center">
-            <p>Carregando sistema...</p>
+        <div class="flex h-screen items-center justify-center text-slate-400">
+            Carregando sistema...
         </div>
     </div>
 
     <script type="text/babel">
-        // Tente carregar o App apenas após o DOM carregar
         try {
             const { useState } = React;
-            
+
             const HYDRANTS = [
-                { id: 1, address: "Rua Antônio Joaquim Tavares, 942, Centro (Próx. ao Ginásio)" },
-                { id: 2, address: "Rua Inácio Francisco de Souza (Próx. Pousada Suite 8 - Beto Carrero)" },
-                { id: 3, address: "Rua José Domiciliano Pereira (Av. Itapocoroi - Abastecimento usual)" },
-                { id: 4, address: "Av. Nereu Ramos, 889 (Ao lado da Prefeitura)" },
-                { id: 5, address: "Av. Nereu Ramos (Em frente ao Posto Delta)" },
-                { id: 6, address: "Rua Marciano Luiz Bento, Gravatá (Asilo)" },
-                { id: 7, address: "Rua Inacio Jacinto Albano, 2233, Armação (Em frente Villa Park Chalés)" }
+                { id: 1, address: "Rua Antônio Joaquim Tavares, 942, Centro" },
+                { id: 2, address: "Rua Inácio Francisco de Souza, Armação" },
+                { id: 3, address: "Rua José Domiciliano Pereira, Armação" },
+                { id: 4, address: "Av. Nereu Ramos, 889, Centro" },
+                { id: 5, address: "Av. Nereu Ramos, Posto Delta" },
+                { id: 6, address: "Rua Marciano Luiz Bento, Gravatá" },
+                { id: 7, address: "Rua Inacio Jacinto Albano, 2233, Armação" }
             ];
 
             function App() {
                 const [step, setStep] = useState('home');
-                const [data, setData] = useState({ name: "", rank: "SD BM" });
-                const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OPERANTE', obs: '' })));
-                const [currentIdx, setCurrentIdx] = useState(0);
-
-                const updateStatus = (status, obs) => {
-                    const next = [...checklist];
-                    next[currentIdx].status = status;
-                    next[currentIdx].obs = obs;
-                    setChecklist(next);
-                };
+                const [idx, setIdx] = useState(0);
 
                 return (
-                    <div className="min-h-screen p-4 max-w-lg mx-auto">
+                    <div className="p-6 max-w-lg mx-auto">
+                        <h1 className="text-xl font-bold text-red-500 mb-6 text-center">Checklist Hidrantes</h1>
+                        
                         {step === 'home' && (
-                            <div className="space-y-6 mt-10">
-                                <h1 className="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes - Penha</h1>
-                                <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" placeholder="Responsável (Posto/Nome)" onChange={(e) => setData({...data, name: e.target.value})} />
-                                <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Conferência</button>
-                            </div>
+                            <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-6 rounded-xl font-bold">
+                                Iniciar Vistoria
+                            </button>
                         )}
 
                         {step === 'checklist' && (
-                            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
-                                <h2 className="text-lg font-bold mb-4 text-red-400">Hidrante {currentIdx + 1}/7</h2>
-                                <p className="text-sm mb-6 text-slate-300">{checklist[currentIdx].address}</p>
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-400">Hidrante {idx + 1}/7</p>
+                                <p className="font-bold text-lg">{HYDRANTS[idx].address}</p>
                                 
-                                <div className="space-y-3 mb-6">
-                                    <button onClick={() => updateStatus('OPERANTE', '')} className={`w-full p-4 rounded-xl font-bold ${checklist[currentIdx].status === 'OPERANTE' ? 'bg-green-700' : 'bg-slate-800'}`}>OPERANTE</button>
-                                    <button onClick={() => updateStatus('OUTRO', checklist[currentIdx].obs)} className={`w-full p-4 rounded-xl font-bold ${checklist[currentIdx].status !== 'OPERANTE' ? 'bg-red-700' : 'bg-slate-800'}`}>OUTRO / PROBLEMA</button>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button className="bg-green-600 p-4 rounded">OPERANTE</button>
+                                    <button className="bg-red-600 p-4 rounded">PROBLEMA</button>
                                 </div>
-
-                                {checklist[currentIdx].status !== 'OPERANTE' && (
-                                    <textarea className="w-full p-3 bg-slate-800 rounded mb-4 text-sm" placeholder="Descreva a observação..." onChange={(e) => updateStatus('OUTRO', e.target.value)} />
-                                )}
-
-                                <div className="flex gap-2">
-                                    <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="flex-1 bg-slate-800 p-3 rounded">Voltar</button>
-                                    {currentIdx < 6 ? 
-                                        <button onClick={() => setCurrentIdx(currentIdx + 1)} className="flex-1 bg-red-600 p-3 rounded font-bold">Próximo</button> : 
-                                        <button onClick={() => setStep('final')} className="flex-1 bg-blue-600 p-3 rounded font-bold">Finalizar</button>
-                                    }
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 'final' && (
-                            <div className="space-y-4 text-center mt-10">
-                                <h2 className="text-xl font-bold">Conferência concluída</h2>
-                                <button onClick={() => window.location.reload()} className="w-full bg-slate-800 p-4 rounded">Voltar ao início</button>
+                                
+                                <button onClick={() => setIdx(Math.min(6, idx + 1))} className="w-full bg-slate-700 p-3 rounded mt-4">Próximo</button>
                             </div>
                         )}
                     </div>
@@ -97,9 +67,10 @@
 
             const root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(<App />);
-        } catch (error) {
-            console.error("Erro ao carregar o App:", error);
-            document.getElementById('root').innerHTML = '<div class="p-10 text-red-500">Erro ao carregar. Tente novamente mais tarde.</div>';
+
+        } catch (err) {
+            document.getElementById('root').innerHTML = `<div class="p-10 text-red-500">Erro crítico: ${err.message}</div>`;
+            console.error(err);
         }
     </script>
 </body>
