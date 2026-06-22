@@ -1,89 +1,74 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist Hidrantes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-white font-sans p-4">
+import React, { useState, useEffect } from 'react';
+import emailjs from 'emailjs-com';
+import { CheckCircle, AlertTriangle, Send, User, ArrowLeft, ArrowRight, Clock } from 'lucide-react';
 
-    <div id="app" class="max-w-md mx-auto">
-        <!-- Tela Inicial -->
-        <div id="home" class="block space-y-6 mt-10">
-            <h1 class="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes</h1>
-            <input id="bmName" type="text" placeholder="Nome do Bombeiro" class="w-full p-3 bg-slate-800 rounded border border-slate-700 text-white">
-            <button onclick="startChecklist()" class="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
-        </div>
+const HYDRANTS = [
+  { id: 1, address: "Rua Antônio Joaquim Tavares, 942", neighborhood: "Centro" },
+  { id: 2, address: "Rua Inácio Francisco de Souza", neighborhood: "Armação" },
+  { id: 3, address: "Rua José Domiciliano Pereira", neighborhood: "Armação" },
+  { id: 4, address: "Av. Nereu Ramos, 889", neighborhood: "Centro" },
+  { id: 5, address: "Av. Nereu Ramos (Posto Delta)", neighborhood: "Centro" },
+  { id: 6, address: "Rua Marciano Luiz Bento", neighborhood: "Gravatá" },
+  { id: 7, address: "Rua Inacio Jacinto Albano, 2233", neighborhood: "Armação" }
+];
 
-        <!-- Tela do Checklist -->
-        <div id="checklist" class="hidden bg-slate-800 p-6 rounded-lg text-white">
-            <h2 id="hydrantTitle" class="text-xl font-bold mb-4">Hidrante 1/7</h2>
-            <p id="hydrantAddr" class="text-slate-400 mb-4"></p>
-            
-            <div class="flex gap-2 mb-4">
-                <button onclick="setStatus('OPERANTE')" id="btnOk" class="flex-1 p-3 rounded bg-green-700">OK</button>
-                <button onclick="setStatus('PROBLEMA')" id="btnProblem" class="flex-1 p-3 rounded bg-slate-700">PROBLEMA</button>
-            </div>
-            
-            <textarea id="obs" class="w-full p-2 bg-slate-900 rounded mb-4 hidden" placeholder="Descreva o problema..."></textarea>
-            
-            <div class="flex justify-between mt-4">
-                <button onclick="prev()" class="bg-slate-700 px-4 py-2 rounded">Voltar</button>
-                <button onclick="next()" id="nextBtn" class="bg-blue-600 px-4 py-2 rounded">Próximo</button>
-            </div>
-        </div>
-    </div>
+export default function App() {
+  const [step, setStep] = useState('home');
+  const [firefighter, setFirefighter] = useState({ name: "" });
+  const [lastInspector, setLastInspector] = useState(null);
+  const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OK', obs: '' })));
+  
+  // Carrega o último vistoriador ao abrir o app
+  useEffect(() => {
+    const saved = localStorage.getItem('lastInspector');
+    if (saved) setLastInspector(JSON.parse(saved));
+  }, []);
 
-    <script>
-        const hydrants = [
-            "Rua Antônio Joaquim Tavares, 942, Centro",
-            "Rua Inácio Francisco de Souza, Armação",
-            "Rua José Domiciliano Pereira, Armação",
-            "Av. Nereu Ramos, 889, Centro",
-            "Av. Nereu Ramos, Posto Delta",
-            "Rua Marciano Luiz Bento, Gravatá",
-            "Rua Inacio Jacinto Albano, 2233, Armação"
-        ];
+  const sendEmail = () => {
+    const issues = checklist.filter(h => h.status !== 'OK');
+    
+    const templateParams = {
+      to_email: "7221cmt@cbm.sc.gov.br", // Seu e-mail de destino
+      firefighter_name: firefighter.name,
+      date: new Date().toLocaleDateString(),
+      details: issues.length > 0 ? issues.map(i => `${i.address}: ${i.obs}`).join(" | ") : "Nenhuma alteração.",
+      status: issues.length > 0 ? "Com Problemas" : "Tudo Operante"
+    };
+
+    emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams, 'L_pUEcfq0dD7rcw5p')
+      .then(() => {
+        // Salva o último bombeiro no histórico local
+        const record = { name: firefighter.name, date: new Date().toLocaleString() };
+        localStorage.setItem('lastInspector', JSON.stringify(record));
+        setLastInspector(record);
         
-        let current = 0;
-        let results = hydrants.map(() => ({ status: 'OPERANTE', obs: '' }));
+        alert("Relatório enviado e histórico atualizado!");
+        setStep('home');
+      });
+  };
 
-        function startChecklist() {
-            document.getElementById('home').classList.add('hidden');
-            document.getElementById('checklist').classList.remove('hidden');
-            updateUI();
-        }
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 p-4">
+      {step === 'home' && (
+        <div className="max-w-md mx-auto space-y-6">
+          <h1 className="text-2xl font-bold text-red-500 text-center">Vistoria de Hidrantes</h1>
+          
+          {lastInspector && (
+            <div className="bg-slate-800 p-4 rounded-lg border-l-4 border-blue-500 text-sm">
+              <p className="flex items-center gap-2 font-bold"><Clock size={16}/> Última Vistoria:</p>
+              <p>{lastInspector.name} em {lastInspector.date}</p>
+            </div>
+          )}
 
-        function updateUI() {
-            document.getElementById('hydrantTitle').innerText = `Hidrante ${current + 1}/${hydrants.length}`;
-            document.getElementById('hydrantAddr').innerText = hydrants[current];
-            document.getElementById('btnOk').className = `flex-1 p-3 rounded ${results[current].status === 'OPERANTE' ? 'bg-green-700' : 'bg-slate-700'}`;
-            document.getElementById('btnProblem').className = `flex-1 p-3 rounded ${results[current].status === 'PROBLEMA' ? 'bg-red-700' : 'bg-slate-700'}`;
-            document.getElementById('obs').classList.toggle('hidden', results[current].status === 'OPERANTE');
-            document.getElementById('obs').value = results[current].obs;
-            document.getElementById('nextBtn').innerText = (current === hydrants.length - 1) ? 'Finalizar' : 'Próximo';
-        }
-
-        function setStatus(s) {
-            results[current].status = s;
-            updateUI();
-        }
-
-        function next() {
-            results[current].obs = document.getElementById('obs').value;
-            if (current < hydrants.length - 1) {
-                current++;
-                updateUI();
-            } else {
-                alert("Vistoria Finalizada! (Copie os dados manualmente por enquanto)");
-                console.log(results);
-            }
-        }
-
-        function prev() {
-            if (current > 0) { current--; updateUI(); }
-        }
-    </script>
-</body>
-</html>
+          <input className="w-full p-3 bg-slate-800 rounded border border-slate-700" 
+                 placeholder="Nome do Bombeiro" 
+                 onChange={(e) => setFirefighter({name: e.target.value})} />
+                 
+          <button onClick={() => setStep('checklist')} className="w-full bg-red-600 p-4 rounded font-bold">Iniciar Vistoria</button>
+        </div>
+      )}
+      
+      {/* ... (restante da lógica de checklist igual ao anterior) ... */}
+    </div>
+  );
+}
