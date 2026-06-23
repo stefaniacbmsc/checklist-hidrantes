@@ -1,131 +1,127 @@
-import React, { useState } from 'react';
-import { MapPin, Send, ArrowRight, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vistoria de Hidrantes - Penha</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        (function(){ emailjs.init("L_pUEcfq0dD7rcw5p"); })();
+    </script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4">
 
-const HYDRANTS = [
-  { id: 1, address: "Rua Antônio Joaquim Tavares, 942", mapsLink: "https://maps.app.goo.gl/placeholder1" },
-  { id: 2, address: "Rua Inácio Francisco de Souza", mapsLink: "https://maps.app.goo.gl/placeholder2" },
-  { id: 3, address: "Rua José Domiciliano Pereira", mapsLink: "https://maps.app.goo.gl/placeholder3" },
-  { id: 4, address: "Av. Nereu Ramos, 889", mapsLink: "https://maps.app.goo.gl/placeholder4" },
-  { id: 5, address: "Av. Nereu Ramos (Posto Delta)", mapsLink: "https://maps.app.goo.gl/placeholder5" },
-  { id: 6, address: "Rua Marciano Luiz Bento", mapsLink: "https://maps.app.goo.gl/placeholder6" },
-  { id: 7, address: "Rua Inacio Jacinto Albano, 2233", mapsLink: "https://maps.app.goo.gl/placeholder7" }
-];
+    <div id="toast" class="fixed top-4 left-4 right-4 z-50 p-4 rounded-lg shadow-lg hidden"></div>
 
-export default function App() {
-  const [step, setStep] = useState('home');
-  const [firefighter, setFirefighter] = useState({ name: "" });
-  const [checklist, setChecklist] = useState(HYDRANTS.map(h => ({ ...h, status: 'OPERANTE', obs: '' })));
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [message, setMessage] = useState(null);
-
-  const showMessage = (text, type) => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage(null), 3000);
-  };
-
-  const updateStatus = (status, obs) => {
-    const next = [...checklist];
-    next[currentIdx].status = status;
-    next[currentIdx].obs = obs;
-    setChecklist(next);
-  };
-
-  const sendEmail = () => {
-    if (!window.emailjs) {
-      showMessage("Erro: Serviço de e-mail não carregado.", "error");
-      return;
-    }
-
-    const issues = checklist.filter(h => h.status !== 'OPERANTE');
-    const templateParams = {
-      to_email: "7221cmt@cbm.sc.gov.br",
-      firefighter_name: firefighter.name,
-      date: new Date().toLocaleDateString('pt-BR'),
-      details: issues.length > 0 
-        ? issues.map(i => `${i.address} (${i.status}): ${i.obs}`).join("\n") 
-        : "Nenhuma alteração.",
-    };
-
-    window.emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams, 'L_pUEcfq0dD7rcw5p')
-      .then(() => {
-        showMessage("Relatório enviado com sucesso!", "success");
-        setStep('home');
-      })
-      .catch((err) => {
-        console.error(err);
-        showMessage("Erro ao enviar e-mail.", "error");
-      });
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-4">
-      {message && (
-        <div className={`fixed top-4 left-4 right-4 p-4 rounded-lg shadow-lg flex items-center gap-3 z-50 ${message.type === 'success' ? 'bg-green-700' : 'bg-red-700'}`}>
-          {message.type === 'success' ? <CheckCircle size={20} /> : <XCircle size={20} />}
-          <p className="font-bold">{message.text}</p>
-        </div>
-      )}
-
-      {step === 'home' && (
-        <div className="max-w-md mx-auto space-y-6 pt-10">
-          <h1 className="text-2xl font-bold text-center text-red-500">Vistoria Hidrantes Penha</h1>
-          <input 
-            className="w-full p-4 bg-slate-800 rounded border border-slate-700 text-white" 
-            placeholder="Nome do Bombeiro" 
-            value={firefighter.name}
-            onChange={(e) => setFirefighter({name: e.target.value})} 
-          />
-          <button 
-            onClick={() => firefighter.name ? setStep('checklist') : showMessage("Preencha seu nome primeiro.", "error")} 
-            className="w-full bg-red-600 p-4 rounded font-bold hover:bg-red-700 transition"
-          >
-            Iniciar Vistoria
-          </button>
-        </div>
-      )}
-
-      {step === 'checklist' && (
-        <div className="max-w-md mx-auto bg-slate-800 p-6 rounded-lg text-white shadow-xl">
-          <h2 className="text-lg font-bold mb-1">Hidrante {currentIdx + 1}/7</h2>
-          <p className="text-slate-300 mb-4">{checklist[currentIdx].address}</p>
-          
-          <a href={checklist[currentIdx].mapsLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-400 text-sm mb-6 underline">
-            <MapPin size={16} /> Abrir no Google Maps
-          </a>
-          
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <button 
-              onClick={() => updateStatus('OPERANTE', '')} 
-              className={`p-4 rounded font-bold ${checklist[currentIdx].status === 'OPERANTE' ? 'bg-green-600' : 'bg-slate-700'}`}
-            >
-              OPERANTE
-            </button>
-            <button 
-              onClick={() => updateStatus('PROBLEMA', checklist[currentIdx].obs)} 
-              className={`p-4 rounded font-bold ${checklist[currentIdx].status === 'PROBLEMA' ? 'bg-red-600' : 'bg-slate-700'}`}
-            >
-              PROBLEMA
-            </button>
-          </div>
-
-          {checklist[currentIdx].status === 'PROBLEMA' && (
-            <textarea 
-              className="w-full p-3 bg-slate-900 rounded mb-4 border border-red-500 text-white" 
-              placeholder="Descreva o problema..." 
-              onChange={(e) => updateStatus('PROBLEMA', e.target.value)} 
-              value={checklist[currentIdx].obs} 
-            />
-          )}
-
-          <div className="flex justify-between mt-6">
-            <button onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="flex items-center gap-2 px-4 py-2 bg-slate-700 rounded"><ArrowLeft size={16}/> Voltar</button>
-            {currentIdx < 6 ? 
-              <button onClick={() => setCurrentIdx(currentIdx + 1)} className="flex items-center gap-2 px-4 py-2 bg-slate-700 rounded">Próximo <ArrowRight size={16}/></button> :
-              <button onClick={sendEmail} className="flex items-center gap-2 px-6 py-2 bg-blue-600 rounded font-bold text-white"><Send size={16}/> Enviar</button>
-            }
-          </div>
-        </div>
-      )}
+    <div id="app-container" class="max-w-md mx-auto pt-6">
+        <!-- Rendered dynamically by JavaScript -->
     </div>
-  );
-}
+
+    <script>
+        const HYDRANTS = [
+            { id: 1, address: "Rua Antônio Joaquim Tavares, 942", mapsLink: "https://maps.app.goo.gl/placeholder1" },
+            { id: 2, address: "Rua Inácio Francisco de Souza", mapsLink: "https://maps.app.goo.gl/placeholder2" },
+            { id: 3, address: "Rua José Domiciliano Pereira", mapsLink: "https://maps.app.goo.gl/placeholder3" },
+            { id: 4, address: "Av. Nereu Ramos, 889", mapsLink: "https://maps.app.goo.gl/placeholder4" },
+            { id: 5, address: "Av. Nereu Ramos (Posto Delta)", mapsLink: "https://maps.app.goo.gl/placeholder5" },
+            { id: 6, address: "Rua Marciano Luiz Bento", mapsLink: "https://maps.app.goo.gl/placeholder6" },
+            { id: 7, address: "Rua Inacio Jacinto Albano, 2233", mapsLink: "https://maps.app.goo.gl/placeholder7" }
+        ];
+
+        let state = {
+            step: 'home',
+            firefighterName: '',
+            currentIdx: 0,
+            checklist: HYDRANTS.map(h => ({ ...h, status: 'OPERANTE', obs: '' }))
+        };
+
+        function showToast(text, type) {
+            const toast = document.getElementById('toast');
+            toast.className = `fixed top-4 left-4 right-4 z-50 p-4 rounded-lg shadow-lg text-white font-bold ${type === 'success' ? 'bg-green-700' : 'bg-red-700'}`;
+            toast.textContent = text;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function render() {
+            const container = document.getElementById('app-container');
+            
+            if (state.step === 'home') {
+                container.innerHTML = `
+                    <div class="space-y-6">
+                        <h1 class="text-2xl font-bold text-center text-red-500">Vistoria Hidrantes Penha</h1>
+                        <input id="nameInput" class="w-full p-4 bg-slate-800 rounded border border-slate-700 text-white" placeholder="Nome do Bombeiro" value="${state.firefighterName}">
+                        <button onclick="startChecklist()" class="w-full bg-red-600 p-4 rounded font-bold hover:bg-red-700 transition">Iniciar Vistoria</button>
+                    </div>
+                `;
+            } else {
+                const h = state.checklist[state.currentIdx];
+                container.innerHTML = `
+                    <div class="bg-slate-800 p-6 rounded-lg text-white shadow-xl">
+                        <h2 class="text-lg font-bold mb-1">Hidrante ${state.currentIdx + 1}/7</h2>
+                        <p class="text-slate-300 mb-4">${h.address}</p>
+                        <a href="${h.mapsLink}" target="_blank" class="flex items-center gap-2 text-blue-400 text-sm mb-6 underline">Abrir no Google Maps</a>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-6">
+                            <button onclick="updateStatus('OPERANTE', '')" class="p-4 rounded font-bold ${h.status === 'OPERANTE' ? 'bg-green-600' : 'bg-slate-700'}">OPERANTE</button>
+                            <button onclick="updateStatus('PROBLEMA', '${h.obs}')" class="p-4 rounded font-bold ${h.status === 'PROBLEMA' ? 'bg-red-600' : 'bg-slate-700'}">PROBLEMA</button>
+                        </div>
+
+                        ${h.status === 'PROBLEMA' ? `
+                            <textarea oninput="updateStatus('PROBLEMA', this.value)" class="w-full p-3 bg-slate-900 rounded mb-4 border border-red-500 text-white" placeholder="Descreva o problema...">${h.obs}</textarea>
+                        ` : ''}
+
+                        <div class="flex justify-between mt-6">
+                            <button onclick="navigate(-1)" class="px-4 py-2 bg-slate-700 rounded">Voltar</button>
+                            ${state.currentIdx < 6 
+                                ? `<button onclick="navigate(1)" class="px-4 py-2 bg-slate-700 rounded">Próximo</button>` 
+                                : `<button onclick="sendReport()" class="px-6 py-2 bg-blue-600 rounded font-bold">Enviar Relatório</button>`}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function startChecklist() {
+            const name = document.getElementById('nameInput').value;
+            if (!name) return showToast("Preencha seu nome primeiro.", "error");
+            state.firefighterName = name;
+            state.step = 'checklist';
+            render();
+        }
+
+        function updateStatus(status, obs) {
+            state.checklist[state.currentIdx].status = status;
+            state.checklist[state.currentIdx].obs = obs;
+            render();
+        }
+
+        function navigate(dir) {
+            state.currentIdx = Math.max(0, Math.min(6, state.currentIdx + dir));
+            render();
+        }
+
+        function sendReport() {
+            const issues = state.checklist.filter(h => h.status !== 'OPERANTE');
+            const templateParams = {
+                to_email: "7221cmt@cbm.sc.gov.br",
+                firefighter_name: state.firefighterName,
+                date: new Date().toLocaleDateString('pt-BR'),
+                details: issues.length > 0 ? issues.map(i => `${i.address} (${i.status}): ${i.obs}`).join("\n") : "Nenhuma alteração.",
+            };
+
+            emailjs.send('Servico_CBMSC', 'template_0s9pade', templateParams, 'L_pUEcfq0dD7rcw5p')
+                .then(() => {
+                    showToast("Relatório enviado com sucesso!", "success");
+                    state.step = 'home';
+                    render();
+                })
+                .catch(() => showToast("Erro ao enviar e-mail.", "error"));
+        }
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>
